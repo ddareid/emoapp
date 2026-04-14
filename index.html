@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>EmoApp</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.app {
+  background: white;
+  width: 340px;
+  border-radius: 25px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  margin-top: 5px;
+  cursor: pointer;
+}
+
+.login { background: #667eea; color: white; }
+.registro { background: #48bb78; color: white; }
+.logout { background: red; color: white; }
+
+.emociones button {
+  font-size: 16px;
+  margin: 3px;
+  width: auto;
+}
+
+li {
+  background: #f1f1f1;
+  margin: 5px 0;
+  padding: 8px;
+  border-radius: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div class="app" id="login">
+  <h2>Login</h2>
+  <input type="text" id="usuario" placeholder="Usuario">
+  <input type="password" id="password" placeholder="Contraseña">
+  
+  <button class="login" onclick="iniciarSesion()">Entrar</button>
+  <button class="registro" onclick="registrarse()">Registrarse</button>
+</div>
+
+<!-- APP ALUMNO -->
+<div class="app" id="app" style="display:none;">
+  <h2>Mi día emocional</h2>
+
+  <div class="emociones">
+    <button onclick="setEmocion('😊 Feliz')">😊</button>
+    <button onclick="setEmocion('😐 Neutral')">😐</button>
+    <button onclick="setEmocion('😢 Triste')">😢</button>
+    <button onclick="setEmocion('😡 Enojado')">😡</button>
+    <button onclick="setEmocion('😴 Cansado')">😴</button>
+    <button onclick="setEmocion('😰 Ansioso')">😰</button>
+    <button onclick="setEmocion('🥳 Emocionado')">🥳</button>
+    <button onclick="setEmocion('😎 Motivado')">😎</button>
+    <button onclick="setEmocion('😞 Decepcionado')">😞</button>
+    <button onclick="setEmocion('🤒 Enfermo')">🤒</button>
+    <button onclick="setEmocion('😍 Feliz extremo')">😍</button>
+    <button onclick="setEmocion('😤 Estresado')">😤</button>
+  </div>
+
+  <input type="text" id="comentario" placeholder="¿Qué pasó hoy?">
+
+  <h4>📌 Tarea obligatoria:</h4>
+  <p style="font-size:12px;">Sube un cartel sobre el calentamiento global</p>
+  <input type="file" id="tarea">
+
+  <button onclick="guardar()">Guardar</button>
+  <button class="logout" onclick="cerrarSesion()">Cerrar sesión</button>
+
+  <h3>Historial</h3>
+  <ul id="historial"></ul>
+</div>
+
+<!-- PANEL PROFESOR -->
+<div class="app" id="profe" style="display:none;">
+  <h2>Panel del Profesor</h2>
+  <button class="logout" onclick="cerrarSesion()">Cerrar sesión</button>
+
+  <h3>Registros de alumnos</h3>
+  <ul id="listaProfe"></ul>
+</div>
+
+<script>
+let usuarioActual = "";
+let emocion = "";
+
+// REGISTRO
+function registrarse() {
+  let user = document.getElementById("usuario").value.trim();
+  let pass = document.getElementById("password").value.trim();
+
+  if (!user || !pass) {
+    alert("Completa todos los campos");
+    return;
+  }
+
+  if (localStorage.getItem(user)) {
+    alert("Ese usuario ya existe");
+    return;
+  }
+
+  localStorage.setItem(user, pass);
+  alert("Usuario registrado");
+}
+
+// LOGIN
+function iniciarSesion() {
+  let user = document.getElementById("usuario").value.trim();
+  let pass = document.getElementById("password").value.trim();
+
+  // 🔒 ACCESO OCULTO PROFESOR
+  if (user === "admin123" && pass === "admin123") {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("profe").style.display = "block";
+    cargarProfe();
+    return;
+  }
+
+  let guardado = localStorage.getItem(user);
+
+  if (!guardado || guardado !== pass) {
+    alert("Datos incorrectos");
+    return;
+  }
+
+  usuarioActual = user;
+  document.getElementById("login").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  cargarHistorial();
+}
+
+// EMOCIÓN
+function setEmocion(e) {
+  emocion = e;
+}
+
+// GUARDAR
+function guardar() {
+  let comentario = document.getElementById("comentario").value;
+  let archivo = document.getElementById("tarea").files[0];
+
+  if (!emocion) {
+    alert("Selecciona emoción");
+    return;
+  }
+
+  if (!archivo) {
+    alert("Debes subir la tarea obligatoria");
+    return;
+  }
+
+  let texto = usuarioActual + ": " + emocion + " - " + comentario + " (Tarea: " + archivo.name + ")";
+
+  let datos = JSON.parse(localStorage.getItem(usuarioActual + "_emociones")) || [];
+  datos.push(texto);
+
+  localStorage.setItem(usuarioActual + "_emociones", JSON.stringify(datos));
+
+  cargarHistorial();
+  document.getElementById("comentario").value = "";
+  document.getElementById("tarea").value = "";
+}
+
+// HISTORIAL ALUMNO
+function cargarHistorial() {
+  let lista = document.getElementById("historial");
+  lista.innerHTML = "";
+
+  let datos = JSON.parse(localStorage.getItem(usuarioActual + "_emociones")) || [];
+
+  datos.forEach(d => {
+    let li = document.createElement("li");
+    li.textContent = d;
+    lista.appendChild(li);
+  });
+}
+
+// PANEL PROFESOR
+function cargarProfe() {
+  let lista = document.getElementById("listaProfe");
+  lista.innerHTML = "";
+
+  for (let key in localStorage) {
+    if (key.includes("_emociones")) {
+      let datos = JSON.parse(localStorage.getItem(key));
+
+      datos.forEach(d => {
+        let li = document.createElement("li");
+        li.textContent = d;
+        lista.appendChild(li);
+      });
+    }
+  }
+}
+
+// LOGOUT
+function cerrarSesion() {
+  usuarioActual = "";
+  document.getElementById("login").style.display = "block";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("profe").style.display = "none";
+}
+</script>
+
+</body>
+</html>
