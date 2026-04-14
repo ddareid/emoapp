@@ -8,7 +8,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyDXfq_-PwhKjv2XwDBigYVovu6BSpDrP0Y",
   authDomain: "emoapp-e9ae1.firebaseapp.com",
@@ -25,14 +24,37 @@ let usuarioActual = "";
 let emocion = "";
 let datosGlobales = [];
 
+// REGISTRO
+window.registrarse = function() {
+  let user = document.getElementById("usuario").value;
+  let pass = document.getElementById("password").value;
+
+  if (!user || !pass) {
+    alert("Completa todos los campos");
+    return;
+  }
+
+  localStorage.setItem(user, pass);
+  alert("Usuario registrado");
+};
+
 // LOGIN
 window.iniciarSesion = function() {
   let user = document.getElementById("usuario").value;
+  let pass = document.getElementById("password").value;
 
-  if (user === "admin123") {
+  // PROFE OCULTO
+  if (user === "admin123" && pass === "admin123") {
     document.getElementById("login").style.display = "none";
     document.getElementById("profe").style.display = "block";
     cargarProfe();
+    return;
+  }
+
+  let guardado = localStorage.getItem(user);
+
+  if (!guardado || guardado !== pass) {
+    alert("Datos incorrectos");
     return;
   }
 
@@ -50,9 +72,15 @@ window.setEmocion = function(e) {
 // GUARDAR
 window.guardar = async function() {
   let comentario = document.getElementById("comentario").value;
+  let archivo = document.getElementById("tarea").files[0];
 
   if (!emocion) {
     alert("Selecciona emoción");
+    return;
+  }
+
+  if (!archivo) {
+    alert("Debes subir la tarea obligatoria");
     return;
   }
 
@@ -60,6 +88,7 @@ window.guardar = async function() {
     usuario: usuarioActual,
     emocion: emocion,
     comentario: comentario,
+    tarea: archivo.name,
     fecha: new Date()
   });
 
@@ -67,7 +96,7 @@ window.guardar = async function() {
   cargarHistorial();
 };
 
-// HISTORIAL ALUMNO
+// HISTORIAL
 async function cargarHistorial() {
   let lista = document.getElementById("historial");
   lista.innerHTML = "";
@@ -79,13 +108,13 @@ async function cargarHistorial() {
 
     if (data.usuario === usuarioActual) {
       let li = document.createElement("li");
-      li.textContent = data.emocion + " - " + data.comentario;
+      li.textContent = data.emocion + " - " + data.comentario + " (📄 " + data.tarea + ")";
       lista.appendChild(li);
     }
   });
 }
 
-// PANEL PROFESOR
+// PROFE
 async function cargarProfe() {
   let lista = document.getElementById("listaProfe");
   lista.innerHTML = "";
@@ -98,22 +127,21 @@ async function cargarProfe() {
     datosGlobales.push(data);
 
     let li = document.createElement("li");
-    li.textContent = data.usuario + ": " + data.emocion + " - " + data.comentario;
+    li.textContent = data.usuario + ": " + data.emocion + " - " + data.comentario + " (📄 " + data.tarea + ")";
     lista.appendChild(li);
   });
 }
 
-// 🔍 FILTRO
+// FILTRO
 window.filtrar = function() {
   let texto = document.getElementById("buscador").value.toLowerCase();
   let lista = document.getElementById("listaProfe");
-
   lista.innerHTML = "";
 
   datosGlobales.forEach(d => {
     if (d.usuario.toLowerCase().includes(texto)) {
       let li = document.createElement("li");
-      li.textContent = d.usuario + ": " + d.emocion + " - " + d.comentario;
+      li.textContent = d.usuario + ": " + d.emocion + " - " + d.comentario + " (📄 " + d.tarea + ")";
       lista.appendChild(li);
     }
   });
@@ -166,7 +194,10 @@ input {
 <div class="app" id="login">
   <h2>Login</h2>
   <input type="text" id="usuario" placeholder="Usuario">
+  <input type="password" id="password" placeholder="Contraseña">
+  
   <button onclick="iniciarSesion()">Entrar</button>
+  <button onclick="registrarse()">Registrarse</button>
 </div>
 
 <!-- APP -->
@@ -189,6 +220,9 @@ input {
   </div>
 
   <input type="text" id="comentario" placeholder="¿Qué pasó hoy?">
+
+  <h4>📌 Tarea obligatoria</h4>
+  <input type="file" id="tarea">
 
   <button onclick="guardar()">Guardar</button>
   <button onclick="cerrarSesion()">Cerrar sesión</button>
