@@ -29,13 +29,10 @@ window.registrarse = function() {
   let user = document.getElementById("usuario").value;
   let pass = document.getElementById("password").value;
 
-  if (!user || !pass) {
-    alert("Completa todos los campos");
-    return;
-  }
+  if (!user || !pass) return alert("Completa los campos");
 
   localStorage.setItem(user, pass);
-  alert("Usuario registrado");
+  alert("Registrado");
 };
 
 // LOGIN
@@ -43,26 +40,30 @@ window.iniciarSesion = function() {
   let user = document.getElementById("usuario").value;
   let pass = document.getElementById("password").value;
 
-  // PROFE OCULTO
   if (user === "admin123" && pass === "admin123") {
-    document.getElementById("login").style.display = "none";
-    document.getElementById("profe").style.display = "block";
+    mostrar("profe");
     cargarProfe();
     return;
   }
 
   let guardado = localStorage.getItem(user);
 
-  if (!guardado || guardado !== pass) {
-    alert("Datos incorrectos");
-    return;
-  }
+  if (guardado !== pass) return alert("Error");
 
   usuarioActual = user;
-  document.getElementById("login").style.display = "none";
-  document.getElementById("app").style.display = "block";
+  mostrar("app");
   cargarHistorial();
 };
+
+// CAMBIO DE PANTALLA CON ANIMACIÓN
+function mostrar(seccion) {
+  ["login","app","profe"].forEach(id=>{
+    document.getElementById(id).style.display="none";
+  });
+  let el = document.getElementById(seccion);
+  el.style.display="block";
+  el.classList.add("fade");
+}
 
 // EMOCION
 window.setEmocion = function(e) {
@@ -74,25 +75,18 @@ window.guardar = async function() {
   let comentario = document.getElementById("comentario").value;
   let archivo = document.getElementById("tarea").files[0];
 
-  if (!emocion) {
-    alert("Selecciona emoción");
-    return;
-  }
-
-  if (!archivo) {
-    alert("Debes subir la tarea obligatoria");
-    return;
-  }
+  if (!emocion) return alert("Selecciona emoción");
+  if (!archivo) return alert("Sube la tarea");
 
   await addDoc(collection(db, "emociones"), {
     usuario: usuarioActual,
-    emocion: emocion,
-    comentario: comentario,
+    emocion,
+    comentario,
     tarea: archivo.name,
     fecha: new Date()
   });
 
-  alert("Guardado en internet 🔥");
+  alert("Guardado 🔥");
   cargarHistorial();
 };
 
@@ -101,142 +95,185 @@ async function cargarHistorial() {
   let lista = document.getElementById("historial");
   lista.innerHTML = "";
 
-  const querySnapshot = await getDocs(collection(db, "emociones"));
+  const data = await getDocs(collection(db,"emociones"));
 
-  querySnapshot.forEach((doc) => {
-    let data = doc.data();
-
-    if (data.usuario === usuarioActual) {
-      let li = document.createElement("li");
-      li.textContent = data.emocion + " - " + data.comentario + " (📄 " + data.tarea + ")";
+  data.forEach(doc=>{
+    let d = doc.data();
+    if(d.usuario===usuarioActual){
+      let li=document.createElement("li");
+      li.textContent=`${d.emocion} - ${d.comentario}`;
       lista.appendChild(li);
     }
   });
 }
 
 // PROFE
-async function cargarProfe() {
-  let lista = document.getElementById("listaProfe");
-  lista.innerHTML = "";
-  datosGlobales = [];
+async function cargarProfe(){
+  let lista=document.getElementById("listaProfe");
+  lista.innerHTML="";
+  datosGlobales=[];
 
-  const querySnapshot = await getDocs(collection(db, "emociones"));
+  const data=await getDocs(collection(db,"emociones"));
 
-  querySnapshot.forEach((doc) => {
-    let data = doc.data();
-    datosGlobales.push(data);
+  data.forEach(doc=>{
+    let d=doc.data();
+    datosGlobales.push(d);
 
-    let li = document.createElement("li");
-    li.textContent = data.usuario + ": " + data.emocion + " - " + data.comentario + " (📄 " + data.tarea + ")";
+    let li=document.createElement("li");
+    li.textContent=`${d.usuario}: ${d.emocion}`;
     lista.appendChild(li);
   });
 }
 
 // FILTRO
-window.filtrar = function() {
-  let texto = document.getElementById("buscador").value.toLowerCase();
-  let lista = document.getElementById("listaProfe");
-  lista.innerHTML = "";
+window.filtrar=function(){
+  let t=document.getElementById("buscador").value.toLowerCase();
+  let lista=document.getElementById("listaProfe");
+  lista.innerHTML="";
 
-  datosGlobales.forEach(d => {
-    if (d.usuario.toLowerCase().includes(texto)) {
-      let li = document.createElement("li");
-      li.textContent = d.usuario + ": " + d.emocion + " - " + d.comentario + " (📄 " + d.tarea + ")";
+  datosGlobales.forEach(d=>{
+    if(d.usuario.toLowerCase().includes(t)){
+      let li=document.createElement("li");
+      li.textContent=`${d.usuario}: ${d.emocion}`;
       lista.appendChild(li);
     }
   });
 };
 
 // LOGOUT
-window.cerrarSesion = function() {
-  document.getElementById("login").style.display = "block";
-  document.getElementById("app").style.display = "none";
-  document.getElementById("profe").style.display = "none";
+window.cerrarSesion=function(){
+  mostrar("login");
 };
 </script>
 
 <style>
 body {
-  margin: 0;
-  font-family: Arial;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  margin:0;
+  font-family:sans-serif;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
 }
 
-.app {
-  background: white;
-  width: 340px;
-  border-radius: 25px;
-  padding: 20px;
+/* TARJETA */
+.app{
+  background:white;
+  width:340px;
+  border-radius:25px;
+  padding:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.2);
+  text-align:center;
 }
 
-button { margin-top: 5px; width: 100%; padding: 10px; }
-
-.emociones button {
-  width: auto;
-  margin: 3px;
+/* ANIMACION */
+.fade{
+  animation:fadeIn 0.4s ease;
 }
 
-input {
-  width: 100%;
-  padding: 8px;
-  margin-top: 5px;
+@keyframes fadeIn{
+  from{opacity:0; transform:translateY(20px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+/* INPUT */
+input{
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  border-radius:10px;
+  border:1px solid #ddd;
+}
+
+/* BOTONES TAP */
+button{
+  margin-top:10px;
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:#667eea;
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+button:active{
+  transform:scale(0.95);
+  background:#5a67d8;
+}
+
+/* EMOCIONES */
+.emociones button{
+  width:60px;
+  height:60px;
+  font-size:24px;
+  border-radius:50%;
+  margin:5px;
+  background:#f1f1f1;
+  color:black;
+}
+
+.emociones button:active{
+  transform:scale(1.2);
+  background:#667eea;
+  color:white;
+}
+
+/* LISTA */
+ul{
+  text-align:left;
+  max-height:120px;
+  overflow:auto;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
 <div class="app" id="login">
   <h2>Login</h2>
-  <input type="text" id="usuario" placeholder="Usuario">
-  <input type="password" id="password" placeholder="Contraseña">
-  
+  <input id="usuario" placeholder="Usuario">
+  <input id="password" type="password" placeholder="Contraseña">
   <button onclick="iniciarSesion()">Entrar</button>
   <button onclick="registrarse()">Registrarse</button>
 </div>
 
-<!-- APP -->
 <div class="app" id="app" style="display:none;">
   <h2>Mi día emocional</h2>
 
   <div class="emociones">
-    <button onclick="setEmocion('😊 Feliz')">😊</button>
-    <button onclick="setEmocion('😐 Neutral')">😐</button>
-    <button onclick="setEmocion('😢 Triste')">😢</button>
-    <button onclick="setEmocion('😡 Enojado')">😡</button>
-    <button onclick="setEmocion('😴 Cansado')">😴</button>
-    <button onclick="setEmocion('😰 Ansioso')">😰</button>
-    <button onclick="setEmocion('🥳 Emocionado')">🥳</button>
-    <button onclick="setEmocion('😎 Motivado')">😎</button>
-    <button onclick="setEmocion('😞 Decepcionado')">😞</button>
-    <button onclick="setEmocion('🤒 Enfermo')">🤒</button>
-    <button onclick="setEmocion('😍 Feliz extremo')">😍</button>
-    <button onclick="setEmocion('😤 Estresado')">😤</button>
+    <button onclick="setEmocion('😊')">😊</button>
+    <button onclick="setEmocion('😐')">😐</button>
+    <button onclick="setEmocion('😢')">😢</button>
+    <button onclick="setEmocion('😡')">😡</button>
+    <button onclick="setEmocion('😴')">😴</button>
+    <button onclick="setEmocion('😰')">😰</button>
+    <button onclick="setEmocion('🥳')">🥳</button>
+    <button onclick="setEmocion('😎')">😎</button>
+    <button onclick="setEmocion('😞')">😞</button>
+    <button onclick="setEmocion('🤒')">🤒</button>
+    <button onclick="setEmocion('😍')">😍</button>
+    <button onclick="setEmocion('😤')">😤</button>
   </div>
 
-  <input type="text" id="comentario" placeholder="¿Qué pasó hoy?">
-
-  <h4>📌 Tarea obligatoria</h4>
+  <input id="comentario" placeholder="¿Qué pasó hoy?">
   <input type="file" id="tarea">
 
   <button onclick="guardar()">Guardar</button>
-  <button onclick="cerrarSesion()">Cerrar sesión</button>
+  <button onclick="cerrarSesion()">Salir</button>
 
   <ul id="historial"></ul>
 </div>
 
-<!-- PROFESOR -->
 <div class="app" id="profe" style="display:none;">
   <h2>Panel profesor</h2>
 
-  🔍 <input type="text" id="buscador" placeholder="Buscar alumno..." onkeyup="filtrar()">
+  <input id="buscador" placeholder="Buscar alumno..." onkeyup="filtrar()">
 
-  <button onclick="cerrarSesion()">Cerrar sesión</button>
+  <button onclick="cerrarSesion()">Salir</button>
 
   <ul id="listaProfe"></ul>
 </div>
